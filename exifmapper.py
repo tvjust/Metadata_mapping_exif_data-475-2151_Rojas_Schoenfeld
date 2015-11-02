@@ -54,7 +54,7 @@ x = str(x)
 print ("Found " + x + " files with GPS coordinates\n\n")
 
 # Ready to plug the coordinates into google 
-key = "key=AIzaSyBhnG9rbyb8Z4hS88tiQ3qqoZr9a4Hr48Y"
+key = "key=$ENTER_YOUR_GOOGLE_MAPS_STATIC_API_KEY_HERE"
 baseurl = "https://maps.googleapis.com/maps/api/staticmap?" + key
 scale = "scale=2"
 size = "size=1024x1024"
