@@ -10,9 +10,11 @@ Next, download the python libraries used in exifmapper.py if they are not instal
   - pip install subprocess
   - pip install re
   - pip install sys
+  - pip install argparse
 
 In order to use the tool you need to register for a Google Maps Static API key.  
-Around line 57 you should enter in your key.  
+
+You should enter in your key around line 110 
 
 
 
