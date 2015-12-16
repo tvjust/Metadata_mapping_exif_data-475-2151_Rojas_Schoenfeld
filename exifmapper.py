@@ -7,18 +7,36 @@
 import string,sys,os
 import subprocess
 import re
+import argparse
+
+parser = argparse.ArgumentParser(description='Maps GPS coordinates from EXIF data..Requires exiftool.exe (http://www.sno.phy.queensu.ca/~phil/exiftool) Rename it exiftool.exe and store in same local directory')
+parser.add_argument('directory', help='Directory to search')
+parser.add_argument('-r', '--recursive', help='Recursively scan directory', action='store_true')
+parser.add_argument('-c','--center', help='A specific location to center on (Enter location surrounded in quotes) Options can be:\n\tAddresses, GPS coordinates, zip codes, States, Cities, etc.')
+parser.add_argument('-z', '--zoom', help='Enter a zoom level for map.  0 for lowest, 21+ for highly zoomed in.')
+args = parser.parse_args()
 
 
+print ("Searching the directory for files.....\n")
 
 Final_GPS_Coords = {}		
 JPG_Files = []
 
-#Search for JPG files in the filesystem
-for root, dir, files in os.walk(str(sys.argv[1])):
+
+if args.recursive is True:
+	#Search for JPG files in the filesystem
+	for root, dir, files in os.walk(str(args.directory)):
 		for fp in files:
 			if ".JPG" or ".MOV" in fp.upper():			# ADD FEATURE FOR CUSTOM FILE FORMATS
 				fn = root+'/'+fp
 				JPG_Files.append(fn)
+elif args.recursive is False:
+	files = [f for f in os.listdir(args.directory) if os.path.isfile(f)]
+	for file in files:
+		if ".JPG" or ".MOV" in file.upper():	
+			fn = args.directory+'/'+file
+			JPG_Files.append(fn)
+
 
 #Search for GPS data in the JPG Files
 for jpg in JPG_Files:
@@ -82,11 +100,19 @@ for coord in Final_GPS_Coords.values():
 #Remove any extra trailing "&" after crafting the marker URL
 marker = re.sub(r'&$', '', marker, flags=re.IGNORECASE)
 x = str(x)
-print ("Found " + x + " files with GPS coordinates\n\n")
+print ("Found " + x + " file(s) with GPS coordinates\n\n")
 
 # Ready to plug the coordinates into google 
-key = "key=$GOOGLEMAPSSTATICAPIKEY"
-baseurl = "https://maps.googleapis.com/maps/api/staticmap?" + key
+key = "key=AIzaSyBhnG9rbyb8Z4hS88tiQ3qqoZr9a4Hr48Y"
+if args.center and args.zoom:
+	baseurl = "https://maps.googleapis.com/maps/api/staticmap?" + key + "&" + "center=" + args.center + "&" + "zoom=" + args.zoom
+elif args.zoom:
+	baseurl = "https://maps.googleapis.com/maps/api/staticmap?" + key + "&" + "zoom=" + args.zoom
+elif args.center:
+	baseurl = "https://maps.googleapis.com/maps/api/staticmap?" + key + "&" + "center=" + args.center
+else:
+	baseurl = "https://maps.googleapis.com/maps/api/staticmap?" + key
+
 scale = "scale=2"
 size = "size=1024x1024"
 
@@ -95,17 +121,20 @@ size = "size=1024x1024"
 #We need to match the coordinates from both of our dictionaries so if they're equal we'll be able to 
 #match the appropriate labels so that our labels are accurate
 for jpg in Final_GPS_Coords:
-	for x in Label_Tracker:
-		if Final_GPS_Coords[jpg] == Label_Tracker[x]: #If we find two coordinates that are equal, proceed
-			print ("=======================================================================================")
-			print ("File Identifier " +  Letters[x]  )
-			print ("Raw GPS " + Final_GPS_Coords[jpg])
-			per_coord_url = baseurl + "&" + scale + "&" + size + "&" + base_marker + Label_Tracker[x]
+	for i in Label_Tracker:
+		if Final_GPS_Coords[jpg] == Label_Tracker[i]: #If we find two coordinates that are equal, proceed
+			print ("========================================================================================================================================================================================")
+			print ("File Identifier:  " +  Letters[i]  )
+			print ("Raw GPS:         " + Final_GPS_Coords[jpg])
+			per_coord_url = baseurl + "&" + scale + "&" + size + "&" + base_marker + Label_Tracker[i]
 			per_coord_url = re.sub(r'label:\s', '', per_coord_url, flags=re.IGNORECASE)
-			print ("File   ----->  " + jpg + "\nGoogle Map Link:  " + per_coord_url )
+			print ("File:             " + jpg + "\nGoogle Map Link:  " + per_coord_url )
 			per_coord_url = "" 
-			print ("=======================================================================================\n\n\n")
+			print ("========================================================================================================================================================================================\n\n\n")
 
-#Put together all of the strings for the final URL
-Final_url = baseurl + "&" + scale + "&" + size + "&" + marker
-print ("THE URL FOR YOUR MAP:\n" + Final_url)
+if int(x) > 0 :
+#Put together all of the strings for the final URL if we find any files with GPS Information
+	Final_url = baseurl + "&" + scale + "&" + size + "&" + marker
+	print ("THE URL FOR YOUR MAP:\n" + Final_url)
+else:
+	print ("Could not find any files with GPS information...Maybe you mistyped the directory\n")
